@@ -1,0 +1,31 @@
+{
+  "name": "llm-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A reliable, cost-aware gateway in front of LLM providers: one API, fallback, rate limits, budgets, caching, PII redaction and a dashboard.",
+  "workspaces": [
+    "gateway",
+    "mock-provider",
+    "dashboard"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspace gateway --workspace mock-provider",
+    "test:integration": "npm run test:integration --workspace gateway",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "globals": "^16.5.0",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
