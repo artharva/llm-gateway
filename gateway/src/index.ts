@@ -7,6 +7,8 @@ import { createLogger } from './logger';
 import { KeyResolver } from './middleware/auth';
 import { loadGatewayConfig } from './config/gatewayConfig';
 import { createProviders } from './providers/registry';
+import { createRedis, waitForRedis } from './redis/client';
+import { CircuitBreakers, RedisBreakerStore } from './reliability/CircuitBreaker';
 import { Router } from './router/Router';
 
 async function main(): Promise<void> {
@@ -20,16 +22,28 @@ async function main(): Promise<void> {
   const providers = createProviders(config, process.env, logger);
   logger.info({ providers: [...providers.keys()] }, 'providers ready');
 
+  const redis = createRedis(env.REDIS_URL, logger);
+  if (!(await waitForRedis(redis)))
+    logger.warn('redis not reachable at startup; running on in-memory fallbacks');
+  const breakers = new CircuitBreakers(
+    config.breaker,
+    new RedisBreakerStore(redis, config.breaker),
+    { logger },
+  );
+
   const app = createApp({
     keys: new KeyResolver(new PgKeyStore(pool)),
-    router: new Router(config, providers),
+    router: new Router(config, providers, breakers, { logger }),
     logger,
   });
   const server = app.listen(env.PORT, () => logger.info({ port: env.PORT }, 'gateway listening'));
 
   const shutdown = (signal: string) => {
     logger.info({ signal }, 'shutting down');
-    server.close(() => void pool.end().finally(() => process.exit(0)));
+    server.close(() => {
+      redis.disconnect();
+      void pool.end().finally(() => process.exit(0));
+    });
     setTimeout(() => process.exit(1), 10_000).unref();
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));

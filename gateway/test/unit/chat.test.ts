@@ -5,13 +5,24 @@ import { silentLogger } from '../../src/logger';
 import { KeyResolver } from '../../src/middleware/auth';
 import { ProviderError } from '../../src/providers/errors';
 import { Router } from '../../src/router/Router';
-import { fakeConfig, FakeProvider, providerMap } from '../helpers/fakes';
+import {
+  fakeConfig,
+  FakeProvider,
+  instantRetries,
+  memoryBreakers,
+  providerMap,
+} from '../helpers/fakes';
 
 async function setup() {
   const store = new MemoryKeyStore();
   const { key, record } = await store.create({ name: 'test' });
   const provider = new FakeProvider('primary');
-  const router = new Router(fakeConfig({ fast: { chain: ['primary'] } }), providerMap(provider));
+  const router = new Router(
+    fakeConfig({ fast: { chain: ['primary'] } }),
+    providerMap(provider),
+    memoryBreakers(),
+    instantRetries,
+  );
   const app = createApp({ keys: new KeyResolver(store, 0), router, logger: silentLogger });
   return { app, key, record, store, provider };
 }
@@ -106,7 +117,7 @@ describe('POST /v1/chat', () => {
     expect(res.body.error.code).toBe('invalid_json');
   });
 
-  it('returns 502 when the provider fails', async () => {
+  it('returns 502 with each failure when every provider fails', async () => {
     const { app, key, provider } = await setup();
     provider.behaviour = async () => {
       throw new ProviderError('primary', 'provider_unavailable', 'down', true, 503);

@@ -19,10 +19,27 @@ const aliasSchema = z.object({
   timeoutMs: z.number().int().positive().default(15_000),
 });
 
+const retrySchema = z.object({
+  maxRetries: z.number().int().min(0).max(5).default(2),
+  baseDelayMs: z.number().int().min(0).default(200),
+  maxDelayMs: z.number().int().min(0).default(2000),
+});
+
+const breakerSchema = z.object({
+  failureThreshold: z.number().int().positive().default(5),
+  windowMs: z.number().int().positive().default(30_000),
+  cooldownMs: z.number().int().positive().default(20_000),
+  trialTimeoutMs: z.number().int().positive().default(30_000),
+});
+
 export const gatewayConfigSchema = z
   .object({
     providers: z.record(z.string(), providerSchema),
     aliases: z.record(z.string(), aliasSchema),
+    retry: retrySchema.prefault({}),
+    /** Hard cap on one request across all retries and fallbacks. */
+    requestDeadlineMs: z.number().int().positive().default(30_000),
+    breaker: breakerSchema.prefault({}),
   })
   .superRefine((cfg, ctx) => {
     for (const [alias, { chain }] of Object.entries(cfg.aliases)) {

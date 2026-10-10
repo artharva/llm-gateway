@@ -32,10 +32,38 @@
     }
   },
   "aliases": {
-    "fast": { "chain": ["groq", "gemini", "ollama"], "timeoutMs": 5000 },
-    "smart": { "chain": ["gemini", "groq", "ollama"], "timeoutMs": 15000 },
-    "balanced": { "chain": ["groq", "gemini"], "strategy": "round-robin", "timeoutMs": 10000 },
-    "local": { "chain": ["ollama"], "timeoutMs": 30000 },
-    "mock": { "chain": ["mock-primary", "mock-backup"], "timeoutMs": 2000 }
+    "fast": {
+      "chain": ["groq", "gemini", "ollama"],
+      "timeoutMs": 5000
+    },
+    "smart": {
+      "chain": ["gemini", "groq", "ollama"],
+      "timeoutMs": 15000
+    },
+    "balanced": {
+      "chain": ["groq", "gemini"],
+      "strategy": "round-robin",
+      "timeoutMs": 10000
+    },
+    "local": {
+      "chain": ["ollama"],
+      "timeoutMs": 30000
+    },
+    "mock": {
+      "chain": ["mock-primary", "mock-backup"],
+      "timeoutMs": 2000
+    }
+  },
+  "retry": {
+    "maxRetries": 2,
+    "baseDelayMs": 200,
+    "maxDelayMs": 2000
+  },
+  "requestDeadlineMs": 30000,
+  "breaker": {
+    "failureThreshold": 5,
+    "windowMs": 30000,
+    "cooldownMs": 20000,
+    "trialTimeoutMs": 30000
   }
 }

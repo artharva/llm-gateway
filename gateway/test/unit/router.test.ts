@@ -5,7 +5,7 @@ import { HttpError } from '../../src/errors';
 import { createProviders } from '../../src/providers/registry';
 import { Router } from '../../src/router/Router';
 import { PriorityStrategy, RoundRobinStrategy } from '../../src/router/strategies';
-import { fakeConfig, FakeProvider, providerMap } from '../helpers/fakes';
+import { fakeConfig, FakeProvider, memoryBreakers, providerMap } from '../helpers/fakes';
 
 const configFile = path.join(__dirname, '..', '..', 'config', 'gateway.json');
 
@@ -62,21 +62,37 @@ describe('Router', () => {
       temperature: 0,
     };
 
-    const first = new Router(fakeConfig({ fast: { chain: ['a', 'b'] } }), providerMap(a, b));
+    const first = new Router(
+      fakeConfig({ fast: { chain: ['a', 'b'] } }),
+      providerMap(a, b),
+      memoryBreakers(),
+    );
     expect((await first.route('fast', req)).provider).toBe('a');
 
-    const swapped = new Router(fakeConfig({ fast: { chain: ['b', 'a'] } }), providerMap(a, b));
+    const swapped = new Router(
+      fakeConfig({ fast: { chain: ['b', 'a'] } }),
+      providerMap(a, b),
+      memoryBreakers(),
+    );
     expect((await swapped.route('fast', req)).provider).toBe('b');
   });
 
   it('leaves unconfigured providers out of the plan', () => {
     const b = new FakeProvider('b');
-    const router = new Router(fakeConfig({ fast: { chain: ['a', 'b'] } }), providerMap(b));
+    const router = new Router(
+      fakeConfig({ fast: { chain: ['a', 'b'] } }),
+      providerMap(b),
+      memoryBreakers(),
+    );
     expect(router.plan('fast').map((p) => p.name)).toEqual(['b']);
   });
 
   it('returns 503 when no provider of an alias is configured', () => {
-    const router = new Router(fakeConfig({ fast: { chain: ['a'] } }), providerMap());
+    const router = new Router(
+      fakeConfig({ fast: { chain: ['a'] } }),
+      providerMap(),
+      memoryBreakers(),
+    );
     expect(() => router.plan('fast')).toThrow(HttpError);
     expect(() => router.plan('fast')).toThrow(/No provider is configured/);
   });

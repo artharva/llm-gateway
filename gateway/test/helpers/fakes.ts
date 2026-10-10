@@ -1,5 +1,6 @@
 import { parseGatewayConfig, type GatewayConfig } from '../../src/config/gatewayConfig';
 import type { Provider, ProviderRequest } from '../../src/providers/Provider';
+import { CircuitBreakers } from '../../src/reliability/CircuitBreaker';
 import type { ProviderResult } from '../../src/types';
 
 type Behaviour = (req: ProviderRequest, signal?: AbortSignal) => Promise<ProviderResult>;
@@ -44,3 +45,18 @@ export function fakeConfig(
 export function providerMap(...providers: Provider[]): Map<string, Provider> {
   return new Map(providers.map((p) => [p.name, p]));
 }
+
+export const testBreakerSettings = {
+  failureThreshold: 5,
+  windowMs: 30_000,
+  cooldownMs: 20_000,
+  trialTimeoutMs: 30_000,
+};
+
+/** In-memory breakers with a controllable clock. */
+export function memoryBreakers(now: () => number = Date.now, settings = testBreakerSettings) {
+  return new CircuitBreakers(settings, null, { now });
+}
+
+/** Router options for tests: no real sleeping, and a fixed jitter roll. */
+export const instantRetries = { sleep: async () => undefined, random: () => 0.5 };
