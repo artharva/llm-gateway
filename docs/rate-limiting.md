@@ -4,12 +4,12 @@ Each API key gets a token bucket in Redis: `burst` tokens of capacity, refilled 
 
 ## The three common algorithms
 
-| Algorithm | How it counts | Strength | Weakness |
-| --- | --- | --- | --- |
-| Fixed window | One counter per key per clock minute, reset on the minute | One `INCR` + `EXPIRE`; trivial | A client can send the full limit at 12:00:59 and again at 12:01:00, so twice the limit in two seconds |
-| Sliding window log | A sorted set of request timestamps; count those in the last 60 s | Exact; no boundary burst | Memory grows with the limit (60,000/min means 60,000 entries per key) and each check scans the set |
-| Sliding window counter | Weighted mix of this window's and last window's counters | Cheap and close to exact | An approximation; harder to explain and to give an exact `Retry-After` |
-| **Token bucket** (chosen) | Two numbers per key: tokens left and last refill time | O(1) memory, smooth refill, bursts allowed up to a set size, exact time-to-next-token for `Retry-After` | Needs fractional arithmetic, and the check-and-take must be atomic |
+| Algorithm                 | How it counts                                                    | Strength                                                                                                | Weakness                                                                                              |
+| ------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Fixed window              | One counter per key per clock minute, reset on the minute        | One `INCR` + `EXPIRE`; trivial                                                                          | A client can send the full limit at 12:00:59 and again at 12:01:00, so twice the limit in two seconds |
+| Sliding window log        | A sorted set of request timestamps; count those in the last 60 s | Exact; no boundary burst                                                                                | Memory grows with the limit (60,000/min means 60,000 entries per key) and each check scans the set    |
+| Sliding window counter    | Weighted mix of this window's and last window's counters         | Cheap and close to exact                                                                                | An approximation; harder to explain and to give an exact `Retry-After`                                |
+| **Token bucket** (chosen) | Two numbers per key: tokens left and last refill time            | O(1) memory, smooth refill, bursts allowed up to a set size, exact time-to-next-token for `Retry-After` | Needs fractional arithmetic, and the check-and-take must be atomic                                    |
 
 ## Why token bucket here
 

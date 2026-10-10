@@ -47,6 +47,13 @@ export const gatewayConfigSchema = z
     requestDeadlineMs: z.number().int().positive().default(30_000),
     breaker: breakerSchema.prefault({}),
     cache: cacheSchema.prefault({}),
+    /** USD per million tokens, by provider name, for cost estimates. */
+    prices: z
+      .record(
+        z.string(),
+        z.object({ inputPer1M: z.number().min(0), outputPer1M: z.number().min(0) }),
+      )
+      .default({}),
   })
   .superRefine((cfg, ctx) => {
     for (const [alias, { chain }] of Object.entries(cfg.aliases)) {

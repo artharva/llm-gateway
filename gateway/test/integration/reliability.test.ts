@@ -6,6 +6,7 @@ import { parseGatewayConfig } from '../../src/config/gatewayConfig';
 import { MemoryKeyStore } from '../../src/db/keyStore';
 import { BudgetTracker } from '../../src/limits/BudgetTracker';
 import { RateLimiter } from '../../src/limits/RateLimiter';
+import { MemoryLogSink } from '../../src/logging/requestLog';
 import { silentLogger } from '../../src/logger';
 import { KeyResolver } from '../../src/middleware/auth';
 import { createProviders } from '../../src/providers/registry';
@@ -58,6 +59,9 @@ describeIntegration('fallback through the full app with a failing mock provider'
       budget: new BudgetTracker(redis),
       cache: new ResponseCache(redis, { ttlSeconds: 60 }),
       cacheKeyOptions: config.cache,
+      logs: new MemoryLogSink(),
+      prices: {},
+      health: { providers: new Map(), breakers },
       logger: silentLogger,
     });
   });

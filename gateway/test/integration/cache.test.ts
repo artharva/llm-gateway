@@ -5,6 +5,7 @@ import { ResponseCache } from '../../src/cache/ResponseCache';
 import { MemoryKeyStore } from '../../src/db/keyStore';
 import { BudgetTracker } from '../../src/limits/BudgetTracker';
 import { RateLimiter } from '../../src/limits/RateLimiter';
+import { MemoryLogSink } from '../../src/logging/requestLog';
 import { silentLogger } from '../../src/logger';
 import { KeyResolver } from '../../src/middleware/auth';
 import { CircuitBreakers, RedisBreakerStore } from '../../src/reliability/CircuitBreaker';
@@ -38,6 +39,9 @@ describeIntegration('response cache shared through Redis', () => {
         budget: new BudgetTracker(redis),
         cache: new ResponseCache(redis, { ttlSeconds: config.cache.ttlSeconds }),
         cacheKeyOptions: config.cache,
+        logs: new MemoryLogSink(),
+        prices: {},
+        health: { providers: new Map(), breakers: new CircuitBreakers(config.breaker, null) },
         logger: silentLogger,
       }),
     );

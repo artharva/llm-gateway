@@ -6,6 +6,11 @@ import type { BudgetTracker } from '../limits/BudgetTracker';
 import type { RateLimiter } from '../limits/RateLimiter';
 import { requireApiKey, type KeyResolver } from '../middleware/auth';
 import { enforceBudget, rateLimit } from '../middleware/limits';
+import { redactPii } from '../middleware/privacy';
+import { logRequests } from '../middleware/requestLog';
+import type { Price } from '../logging/cost';
+import type { LogSink } from '../logging/requestLog';
+import type { Metrics } from '../metrics/metrics';
 import { validateBody } from '../middleware/validate';
 import type { Router } from '../router/Router';
 import { chatRequestSchema, type ChatRequest, type ChatResponse } from '../types';
@@ -17,21 +22,31 @@ export interface ChatRouteDeps {
   budget: BudgetTracker;
   cache: ResponseCache;
   cacheKeyOptions: CacheKeyOptions;
+  logs: LogSink;
+  prices: Record<string, Price>;
+  metrics?: Metrics;
+  logPrompts?: boolean;
 }
 
 /**
  * The request path, one middleware per step:
- * auth -> validation -> rate limit -> budget -> cache -> route to a provider.
+ * log -> auth -> validation -> rate limit -> budget -> PII redaction -> cache -> route to a provider.
  * A cache hit returns early and never reaches a provider.
  */
 export function chatRoutes(deps: ChatRouteDeps): ExpressRouter {
   const routes = ExpressRouter();
   routes.post(
     '/v1/chat',
+    logRequests(deps.logs, {
+      prices: deps.prices,
+      metrics: deps.metrics,
+      isKnownModel: (alias) => deps.router.hasAlias(alias),
+    }),
     requireApiKey(deps.keys),
     validateBody(chatRequestSchema),
     rateLimit(deps.limiter),
     enforceBudget(deps.budget),
+    redactPii({ metrics: deps.metrics, logPrompts: deps.logPrompts }),
     async (req, res) => {
       const body = res.locals.body as ChatRequest;
       const c = ctx(res);
@@ -43,6 +58,7 @@ export function chatRoutes(deps: ChatRouteDeps): ExpressRouter {
         const hit = await deps.cache.get(key);
         if (hit) {
           c.cacheHit = true;
+          c.cacheStatus = 'HIT';
           c.provider = hit.provider;
           res.setHeader('X-Cache', 'HIT');
           // A hit costs nothing, so it reports (and bills) zero tokens.
@@ -56,7 +72,8 @@ export function chatRoutes(deps: ChatRouteDeps): ExpressRouter {
           return;
         }
       }
-      res.setHeader('X-Cache', policy.read ? 'MISS' : 'BYPASS');
+      c.cacheStatus = policy.read ? 'MISS' : 'BYPASS';
+      res.setHeader('X-Cache', c.cacheStatus);
 
       const routed = await deps.router.route(body.model, body);
       c.provider = routed.provider;

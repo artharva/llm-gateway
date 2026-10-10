@@ -12,10 +12,13 @@ export class RequestContext {
   inputTokens = 0;
   outputTokens = 0;
   cacheHit = false;
+  cacheStatus?: 'HIT' | 'MISS' | 'BYPASS';
   fallbackUsed = false;
   attempts = 0;
   errorCode?: string;
   piiRedacted = 0;
+  /** The redacted prompt, kept only when LOG_PROMPTS=true. */
+  prompt?: string;
 
   elapsedMs(): number {
     return Math.round(performance.now() - this.startedAt);

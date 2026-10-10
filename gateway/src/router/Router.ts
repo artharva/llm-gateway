@@ -70,6 +70,10 @@ export class Router {
     this.now = opts.now ?? Date.now;
   }
 
+  hasAlias(alias: string): boolean {
+    return this.aliases.has(alias);
+  }
+
   aliasNames(): string[] {
     return [...this.aliases.keys()];
   }

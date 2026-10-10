@@ -70,5 +70,27 @@
     "ttlSeconds": 3600,
     "scope": "global",
     "namespace": "v1"
+  },
+  "prices": {
+    "groq": {
+      "inputPer1M": 0.05,
+      "outputPer1M": 0.08
+    },
+    "gemini": {
+      "inputPer1M": 0.1,
+      "outputPer1M": 0.4
+    },
+    "ollama": {
+      "inputPer1M": 0,
+      "outputPer1M": 0
+    },
+    "mock-primary": {
+      "inputPer1M": 0.1,
+      "outputPer1M": 0.4
+    },
+    "mock-backup": {
+      "inputPer1M": 0.1,
+      "outputPer1M": 0.4
+    }
   }
 }
