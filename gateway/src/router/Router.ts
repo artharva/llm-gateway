@@ -16,6 +16,8 @@ export interface RouteResult {
   attempts: number;
   /** True when the answer came from anything but the first provider in the plan. */
   fallbackUsed: boolean;
+  /** How long the successful provider call took; the rest of the request time is the gateway's. */
+  providerMs: number;
 }
 
 export interface AttemptFailure {
@@ -110,6 +112,7 @@ export class Router {
     const deadline = this.now() + this.deadlineMs;
     const failures: AttemptFailure[] = [];
     let attempts = 0;
+    let providerMs = 0;
 
     for (const [index, provider] of plan.entries()) {
       if (this.now() >= deadline) break;
@@ -127,10 +130,12 @@ export class Router {
             }
             attempts++;
             try {
-              const budget = Math.min(timeoutMs, deadline - this.now());
+              const started = this.now();
+              const budget = Math.min(timeoutMs, deadline - started);
               const value = await withTimeout(provider.name, budget, (signal) =>
                 provider.chat(req, signal),
               );
+              providerMs = this.now() - started;
               await this.breakers.success(provider.name);
               return value;
             } catch (err) {
@@ -153,11 +158,20 @@ export class Router {
               ),
           },
         );
-        return { result, provider: provider.name, attempts, fallbackUsed: index > 0 };
+        return {
+          result,
+          provider: provider.name,
+          attempts,
+          fallbackUsed: index > 0,
+          providerMs,
+        };
       } catch (err) {
         if (!(err instanceof ProviderError)) throw err;
         failures.push({ provider: err.provider, code: err.code, message: err.message });
-        this.opts.logger?.warn(
+        // An open breaker skips the provider on every request; logging each skip at warn
+        // buried the real failures during an outage (19k lines in one 40 s load test).
+        const level = err.code === 'circuit_open' ? 'debug' : 'warn';
+        this.opts.logger?.[level](
           { provider: provider.name, code: err.code, alias },
           'provider failed; trying next',
         );

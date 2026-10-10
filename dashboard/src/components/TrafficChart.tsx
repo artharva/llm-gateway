@@ -67,6 +67,7 @@ export function TrafficChart({
                 minTickGap={24}
               />
               <YAxis
+                tickFormatter={(v: number) => fmtCount(v)}
                 tick={{ fill: palette.axis, fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}

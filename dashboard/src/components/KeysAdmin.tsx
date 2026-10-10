@@ -150,12 +150,7 @@ function CreateForm({ onCreate }: { onCreate: (input: KeyInput) => Promise<void>
       </label>
       <label>
         Monthly tokens
-        <input
-          type="number"
-          name="monthly_token_budget"
-          min={0}
-          placeholder="1000000 (0 = no limit)"
-        />
+        <input type="number" name="monthly_token_budget" min={0} placeholder="1000000" />
       </label>
       <button className="primary" type="submit" disabled={busy}>
         {busy ? 'Creating…' : 'Create key'}
@@ -213,6 +208,7 @@ function KeyRow({ k, palette, onSave, onRevoke }: RowProps) {
       </td>
       <td className="num">
         <input
+          className="wide"
           type="number"
           min={0}
           value={budget}

@@ -288,7 +288,7 @@ select {
 .swatch.line {
   height: 2px;
   border-radius: 1px;
-  width: 14px;
+  width: 18px;
 }
 
 .swatch.dashed {
@@ -339,7 +339,7 @@ table {
 th,
 td {
   text-align: left;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-bottom: 1px solid var(--grid);
   white-space: nowrap;
 }
@@ -402,7 +402,7 @@ th.num {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 160px;
+  min-width: 130px;
 }
 
 .meter .track {
@@ -492,8 +492,13 @@ input[type='number'] {
 }
 
 td input[type='number'] {
-  width: 110px;
+  width: 96px;
   padding: 4px 8px;
+  text-align: right;
+}
+
+td input[type='number'].wide {
+  width: 128px;
 }
 
 .row-actions {

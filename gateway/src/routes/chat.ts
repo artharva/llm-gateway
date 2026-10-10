@@ -76,6 +76,8 @@ export function chatRoutes(deps: ChatRouteDeps): ExpressRouter {
       res.setHeader('X-Cache', c.cacheStatus);
 
       const routed = await deps.router.route(body.model, body);
+      // Lets clients (and the load tests) split latency into provider time and gateway overhead.
+      res.setHeader('Server-Timing', `provider;dur=${routed.providerMs}`);
       c.provider = routed.provider;
       c.attempts = routed.attempts;
       c.fallbackUsed = routed.fallbackUsed;

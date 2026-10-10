@@ -26,6 +26,21 @@ describe('POST /v1/chat', () => {
     expect(res.headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
   });
 
+  it('reports provider time in Server-Timing so overhead can be measured', async () => {
+    const { app, key, primary } = await setup();
+    primary.behaviour = async () => {
+      await new Promise((r) => setTimeout(r, 40));
+      return { text: 'slow', usage: { input_tokens: 1, output_tokens: 1 } };
+    };
+    const res = await request(app)
+      .post('/v1/chat')
+      .set('Authorization', `Bearer ${key}`)
+      .send(body);
+    const dur = Number(/provider;dur=(\d+)/.exec(res.headers['server-timing'] ?? '')?.[1]);
+    expect(dur).toBeGreaterThanOrEqual(35);
+    expect(dur).toBeLessThanOrEqual(res.body.latency_ms);
+  });
+
   it('fills in defaults for max_tokens and temperature', async () => {
     const { app, key, primary: provider } = await setup();
     await request(app).post('/v1/chat').set('Authorization', `Bearer ${key}`).send(body);

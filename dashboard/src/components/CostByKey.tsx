@@ -38,7 +38,10 @@ export function CostByKey({ keys, palette }: { keys: KeyStats[] | undefined; pal
               <YAxis
                 type="category"
                 dataKey="name"
-                width={120}
+                width={170}
+                tickFormatter={(name: string) =>
+                  name.length > 24 ? `${name.slice(0, 23)}…` : name
+                }
                 tick={{ fill: palette.axis, fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
