@@ -88,10 +88,14 @@ describe('monthly token budgets', () => {
       key: { monthlyTokenBudget: 30, ratePerMin: 1000, burst: 1000 },
       now: () => now,
     });
+    let n = 0;
     const send = () =>
-      request(t.app).post('/v1/chat').set('Authorization', `Bearer ${t.key}`).send(chatBody);
+      request(t.app)
+        .post('/v1/chat')
+        .set('Authorization', `Bearer ${t.key}`)
+        .send({ ...chatBody, messages: [{ role: 'user', content: `question ${n++}` }] });
 
-    // Each fake answer uses 15 tokens.
+    // Each fake answer uses 15 tokens; distinct prompts so none is a cache hit.
     const first = await send();
     expect(first.status).toBe(200);
     expect(first.headers['x-token-budget-remaining']).toBe('30');

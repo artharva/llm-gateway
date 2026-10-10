@@ -1,6 +1,7 @@
 import type Redis from 'ioredis';
 import request from 'supertest';
 import { createApp } from '../../src/app';
+import { ResponseCache } from '../../src/cache/ResponseCache';
 import { parseGatewayConfig } from '../../src/config/gatewayConfig';
 import { MemoryKeyStore } from '../../src/db/keyStore';
 import { BudgetTracker } from '../../src/limits/BudgetTracker';
@@ -55,6 +56,8 @@ describeIntegration('fallback through the full app with a failing mock provider'
       router: new Router(config, createProviders(config, {}), breakers),
       limiter: new RateLimiter(redis),
       budget: new BudgetTracker(redis),
+      cache: new ResponseCache(redis, { ttlSeconds: 60 }),
+      cacheKeyOptions: config.cache,
       logger: silentLogger,
     });
   });
@@ -68,6 +71,7 @@ describeIntegration('fallback through the full app with a failing mock provider'
     request(app)
       .post('/v1/chat')
       .set('Authorization', `Bearer ${key}`)
+      .set('X-Gateway-Cache', 'bypass')
       .send({ model: 'mock', messages: [{ role: 'user', content: 'ping' }] });
 
   it('serves from the primary while it is healthy', async () => {

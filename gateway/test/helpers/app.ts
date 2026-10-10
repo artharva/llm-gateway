@@ -1,4 +1,5 @@
 import { createApp } from '../../src/app';
+import { ResponseCache } from '../../src/cache/ResponseCache';
 import type { GatewayConfig } from '../../src/config/gatewayConfig';
 import { MemoryKeyStore, type NewApiKey } from '../../src/db/keyStore';
 import { BudgetTracker } from '../../src/limits/BudgetTracker';
@@ -25,8 +26,17 @@ export async function testApp(
   });
   const limiter = new RateLimiter(null, { now });
   const budget = new BudgetTracker(null, { now });
-  const app = createApp({ keys: resolver, router, limiter, budget, logger: silentLogger });
-  return { app, key, record, store, primary, backup, limiter, budget, resolver };
+  const cache = new ResponseCache(null, { ttlSeconds: config.cache.ttlSeconds, now });
+  const app = createApp({
+    keys: resolver,
+    router,
+    limiter,
+    budget,
+    cache,
+    cacheKeyOptions: config.cache,
+    logger: silentLogger,
+  });
+  return { app, key, record, store, primary, backup, limiter, budget, resolver, cache, config };
 }
 
 export const chatBody = { model: 'fast', messages: [{ role: 'user', content: 'hi' }] };

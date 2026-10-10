@@ -7,6 +7,7 @@ import { createLogger } from './logger';
 import { KeyResolver } from './middleware/auth';
 import { loadGatewayConfig } from './config/gatewayConfig';
 import { createProviders } from './providers/registry';
+import { ResponseCache } from './cache/ResponseCache';
 import { BudgetTracker } from './limits/BudgetTracker';
 import { RateLimiter } from './limits/RateLimiter';
 import { createRedis, waitForRedis } from './redis/client';
@@ -38,6 +39,8 @@ async function main(): Promise<void> {
     router: new Router(config, providers, breakers, { logger }),
     limiter: new RateLimiter(redis, { logger }),
     budget: new BudgetTracker(redis, { logger }),
+    cache: new ResponseCache(redis, { ttlSeconds: config.cache.ttlSeconds, logger }),
+    cacheKeyOptions: config.cache,
     logger,
   });
   const server = app.listen(env.PORT, () => logger.info({ port: env.PORT }, 'gateway listening'));

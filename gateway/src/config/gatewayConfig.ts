@@ -32,6 +32,12 @@ const breakerSchema = z.object({
   trialTimeoutMs: z.number().int().positive().default(30_000),
 });
 
+const cacheSchema = z.object({
+  ttlSeconds: z.number().int().positive().default(3600),
+  scope: z.enum(['global', 'key']).default('global'),
+  namespace: z.string().min(1).default('v1'),
+});
+
 export const gatewayConfigSchema = z
   .object({
     providers: z.record(z.string(), providerSchema),
@@ -40,6 +46,7 @@ export const gatewayConfigSchema = z
     /** Hard cap on one request across all retries and fallbacks. */
     requestDeadlineMs: z.number().int().positive().default(30_000),
     breaker: breakerSchema.prefault({}),
+    cache: cacheSchema.prefault({}),
   })
   .superRefine((cfg, ctx) => {
     for (const [alias, { chain }] of Object.entries(cfg.aliases)) {

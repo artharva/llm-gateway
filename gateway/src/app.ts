@@ -1,4 +1,6 @@
 import express from 'express';
+import type { CacheKeyOptions } from './cache/cacheKey';
+import type { ResponseCache } from './cache/ResponseCache';
 import type { BudgetTracker } from './limits/BudgetTracker';
 import type { RateLimiter } from './limits/RateLimiter';
 import type { KeyResolver } from './middleware/auth';
@@ -13,6 +15,8 @@ export interface AppDeps {
   router: Router;
   limiter: RateLimiter;
   budget: BudgetTracker;
+  cache: ResponseCache;
+  cacheKeyOptions: CacheKeyOptions;
   logger: Logger;
 }
 

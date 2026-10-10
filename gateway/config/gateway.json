@@ -65,5 +65,10 @@
     "windowMs": 30000,
     "cooldownMs": 20000,
     "trialTimeoutMs": 30000
+  },
+  "cache": {
+    "ttlSeconds": 3600,
+    "scope": "global",
+    "namespace": "v1"
   }
 }
