@@ -65,6 +65,15 @@ services:
       mock-provider:
         condition: service_started
 
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    ports:
+      - '3000:80'
+    depends_on:
+      - gateway
+
 volumes:
   pgdata:
   ollama:

@@ -25,6 +25,7 @@ export interface Overview {
 export interface TimePoint {
   ts: string;
   requests: number;
+  ok: number;
   errors: number;
   limited: number;
   cache_hits: number;
@@ -112,6 +113,7 @@ export class PgStats implements StatsSource {
     const { rows } = await this.pool.query(
       `SELECT date_bin($2::interval, ts, TIMESTAMPTZ '2000-01-01') AS bucket,
               count(*) AS requests,
+              count(*) FILTER (WHERE status = 200) AS ok,
               count(*) FILTER (WHERE status >= 500) AS errors,
               count(*) FILTER (WHERE status = 429) AS limited,
               count(*) FILTER (WHERE cache_hit) AS cache_hits,
@@ -128,6 +130,7 @@ export class PgStats implements StatsSource {
     return rows.map((r) => ({
       ts: (r.bucket as Date).toISOString(),
       requests: num(r.requests),
+      ok: num(r.ok),
       errors: num(r.errors),
       limited: num(r.limited),
       cache_hits: num(r.cache_hits),

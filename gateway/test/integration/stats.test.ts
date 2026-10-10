@@ -122,6 +122,7 @@ describeIntegration('dashboard stats SQL', () => {
   it('time series buckets the window', async () => {
     const points = await stats.timeseries('7d');
     expect(points.reduce((n, p) => n + p.requests, 0)).toBe(120);
+    expect(points.reduce((n, p) => n + p.ok, 0)).toBe(115);
     expect(points[0]).toEqual(
       expect.objectContaining({
         ts: expect.any(String),
