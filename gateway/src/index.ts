@@ -3,6 +3,7 @@ import { ResponseCache } from './cache/ResponseCache';
 import { loadEnv } from './config/env';
 import { loadGatewayConfig } from './config/gatewayConfig';
 import { PgKeyStore } from './db/keyStore';
+import { PgStats } from './db/statsRepo';
 import { migrate } from './db/migrate';
 import { createPool } from './db/pool';
 import { BudgetTracker } from './limits/BudgetTracker';
@@ -45,21 +46,25 @@ async function main(): Promise<void> {
   metrics.watchBreakers(breakers, [...providers.keys()]);
 
   const logs = new PgLogWriter(pool, { logger, onDrop: (n) => metrics.logDrops.inc(n) });
-  const keys = new KeyResolver(new PgKeyStore(pool));
+  const store = new PgKeyStore(pool);
+  const keys = new KeyResolver(store);
   const router = new Router(config, providers, breakers, {
     logger,
     onProviderFailure: (provider, code) => metrics.providerFailures.inc({ provider, code }),
   });
 
+  const budget = new BudgetTracker(redis, {
+    logger,
+    onFallback,
+    seed: (keyId, monthStart) => monthlyTokensFromLog(pool, keyId, monthStart),
+  });
+  if (!env.ADMIN_TOKEN) logger.warn('ADMIN_TOKEN not set: admin API and dashboard are disabled');
+
   const app = createApp({
     keys,
     router,
     limiter: new RateLimiter(redis, { logger, onFallback }),
-    budget: new BudgetTracker(redis, {
-      logger,
-      onFallback,
-      seed: (keyId, monthStart) => monthlyTokensFromLog(pool, keyId, monthStart),
-    }),
+    budget,
     cache: new ResponseCache(redis, { ttlSeconds: config.cache.ttlSeconds, logger, onFallback }),
     cacheKeyOptions: config.cache,
     logs,
@@ -71,6 +76,15 @@ async function main(): Promise<void> {
       breakers,
       checkPostgres: async () => (await pool.query('SELECT 1')).rowCount === 1,
       checkRedis: async () => (await redis.ping()) === 'PONG',
+    },
+    admin: {
+      adminToken: env.ADMIN_TOKEN,
+      store,
+      resolver: keys,
+      stats: new PgStats(pool),
+      budget,
+      breakers,
+      providerNames: [...providers.keys()],
     },
     logger,
   });

@@ -2,6 +2,7 @@ import { createApp } from '../../src/app';
 import { ResponseCache } from '../../src/cache/ResponseCache';
 import type { GatewayConfig } from '../../src/config/gatewayConfig';
 import { MemoryKeyStore, type NewApiKey } from '../../src/db/keyStore';
+import type { StatsSource } from '../../src/db/statsRepo';
 import { BudgetTracker } from '../../src/limits/BudgetTracker';
 import { RateLimiter } from '../../src/limits/RateLimiter';
 import { MemoryLogSink } from '../../src/logging/requestLog';
@@ -16,7 +17,29 @@ export interface TestAppOptions {
   config?: GatewayConfig;
   now?: () => number;
   logPrompts?: boolean;
+  stats?: StatsSource;
 }
+
+export const ADMIN_TOKEN = 'test-admin-token';
+
+const emptyStats: StatsSource = {
+  overview: async () => ({
+    requests: 0,
+    ok: 0,
+    errors: 0,
+    limited: 0,
+    cache_hits: 0,
+    fallbacks: 0,
+    p50_ms: 0,
+    p95_ms: 0,
+    input_tokens: 0,
+    output_tokens: 0,
+    cost_usd: 0,
+  }),
+  timeseries: async () => [],
+  keys: async () => [],
+  providers: async () => [],
+};
 
 /** The whole app wired with in-memory parts, for route-level unit tests. */
 export async function testApp(opts: TestAppOptions = {}) {
@@ -52,6 +75,15 @@ export async function testApp(opts: TestAppOptions = {}) {
     metrics,
     logPrompts: opts.logPrompts,
     health: { providers, breakers, checkPostgres: async () => true },
+    admin: {
+      adminToken: ADMIN_TOKEN,
+      store,
+      resolver,
+      stats: opts.stats ?? emptyStats,
+      budget,
+      breakers,
+      providerNames: [...providers.keys()],
+    },
     logger: silentLogger,
   });
   return {

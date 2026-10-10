@@ -10,6 +10,7 @@ import type { Metrics } from './metrics/metrics';
 import type { KeyResolver } from './middleware/auth';
 import { errorHandler, notFound, requestId } from './middleware/errors';
 import type { Router } from './router/Router';
+import { adminRoutes, type AdminDeps } from './routes/admin';
 import { chatRoutes } from './routes/chat';
 import { healthRoutes, type HealthDeps } from './routes/health';
 
@@ -23,6 +24,7 @@ export interface AppDeps {
   logs: LogSink;
   prices: Record<string, Price>;
   health: HealthDeps;
+  admin?: AdminDeps;
   metrics?: Metrics;
   logPrompts?: boolean;
   logger: Logger;
@@ -35,6 +37,7 @@ export function createApp(deps: AppDeps): express.Express {
   app.use(express.json({ limit: '1mb' }));
   app.use(healthRoutes({ ...deps.health, metrics: deps.metrics }));
   app.use(chatRoutes(deps));
+  if (deps.admin) app.use(adminRoutes(deps.admin));
   app.use(notFound());
   app.use(errorHandler(deps.logger));
   return app;
