@@ -24,22 +24,24 @@ cp .env.example .env          # set ADMIN_TOKEN; add GEMINI_API_KEY / GROQ_API_K
 docker compose up --build     # gateway :8080, dashboard :3000, mock provider :4000, Postgres, Redis
 ```
 
-Open http://localhost:3000, sign in with your `ADMIN_TOKEN`, and create a key on the **Keys** tab (or run `docker compose exec gateway node dist/cli/create-key.js --name demo`). Then:
+Open http://localhost:3000, sign in with your `ADMIN_TOKEN`, and create a key on the **Keys** tab (or run `docker compose exec gateway node dist/cli/create-key.js --name demo`). Then send a request to the `mock` model, which works without any provider keys:
 
 ```bash
 curl -s localhost:8080/v1/chat \
   -H "Authorization: Bearer gw_..." -H "Content-Type: application/json" \
-  -d '{"model":"fast","messages":[{"role":"user","content":"Explain a circuit breaker in one line"}]}'
+  -d '{"model":"mock","messages":[{"role":"user","content":"Explain a circuit breaker in one line"}]}'
 ```
 
 ```json
 {
-  "text": "...",
-  "usage": { "input_tokens": 14, "output_tokens": 22 },
-  "provider": "groq",
-  "latency_ms": 412
+  "text": "Mock answer from primary to: ...",
+  "usage": { "input_tokens": 10, "output_tokens": 17 },
+  "provider": "mock-primary",
+  "latency_ms": 215
 }
 ```
+
+`fast`, `smart` and `balanced` need `GROQ_API_KEY` or `GEMINI_API_KEY` in `.env` (run `docker compose up -d` again after adding them). Without keys they return `502 all_providers_failed`. On Windows PowerShell, use `Copy-Item .env.example .env` and `Invoke-RestMethod` instead of `cp` and `curl`, or run the commands above in Git Bash.
 
 `docker compose --profile local up` also starts Ollama for the `local` alias (pull a model first: `docker compose exec ollama ollama pull llama3.2:1b`).
 
@@ -177,7 +179,7 @@ What each shows:
 - **Slow provider:** only the first requests wait for the 2 s timeout (the max of 2.6 s); after five timeouts the breaker opens and everything goes straight to the backup.
 - **Abuse:** the token bucket let through exactly its burst plus the refill, and the other key was unaffected.
 
-Machine: Intel Core i7-12700H laptop, Ubuntu 22.04 VM with 2 vCPUs and 4 GB RAM, Node 22, k6 1.8. Everything (k6, gateway, mock provider, Postgres, Redis) on that one VM, so these numbers are a floor. To reproduce: `docker compose up -d`, then `ADMIN_TOKEN=... ./load-tests/run-all.sh`.
+Machine: Intel Core i7-12700H laptop, Ubuntu 22.04 VM with 2 vCPUs and 4 GB RAM, Node 22, k6 1.8. Everything (k6, gateway, mock provider, Postgres, Redis) on that one VM, so these numbers are a floor. To reproduce: `docker compose up -d`, then `ADMIN_TOKEN=... bash load-tests/run-all.sh` (needs [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/); on Windows, run it from Git Bash).
 
 ## What broke and how I fixed it
 
@@ -196,6 +198,8 @@ AgentLoop, my coding agent (a separate project), can send every model call throu
 export LLM_GATEWAY_URL=http://localhost:8080 LLM_GATEWAY_KEY=gw_...   # key created on the Keys tab
 agentloop run "fix the failing test in auth.py" --repo examples/buggy_repo --model gateway:smart
 ```
+
+`gateway:smart` needs a Gemini or Groq key in the gateway's `.env`; `gateway:mock` works without one (the mock only echoes, so the agent won't fix anything, but the calls show on the dashboard).
 
 The gateway API is text only, so AgentLoop's gateway client describes its tools in the system prompt and parses a JSON `{"tool_calls": [...]}` reply. It honours `Retry-After` on 429 and 503, and stops at once when the key's monthly budget is used up.
 
