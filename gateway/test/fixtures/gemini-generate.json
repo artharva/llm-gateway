@@ -1,0 +1,19 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [{ "text": "Paris is the capital " }, { "text": "of France." }]
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 12,
+    "candidatesTokenCount": 7,
+    "thoughtsTokenCount": 3,
+    "totalTokenCount": 22
+  },
+  "modelVersion": "gemini-flash-lite-latest"
+}

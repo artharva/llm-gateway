@@ -2,7 +2,7 @@
   "name": "@llm-gateway/mock-provider",
   "version": "1.0.0",
   "private": true,
-  "main": "dist/server.js",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.build.json",

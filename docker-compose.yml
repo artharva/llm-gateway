@@ -24,6 +24,24 @@ services:
       interval: 5s
       retries: 10
 
+  mock-provider:
+    build:
+      context: .
+      dockerfile: mock-provider/Dockerfile
+    environment:
+      MOCK_DELAY_MS: 200
+    ports:
+      - '4000:4000'
+
+  # Optional local model: docker compose --profile local up
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ['local']
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - '11434:11434'
+
   gateway:
     build:
       context: .
@@ -34,6 +52,9 @@ services:
     environment:
       DATABASE_URL: postgres://gateway:gateway@postgres:5432/gateway
       REDIS_URL: redis://redis:6379
+      OLLAMA_URL: http://ollama:11434
+      MOCK_PRIMARY_URL: http://mock-provider:4000/primary
+      MOCK_BACKUP_URL: http://mock-provider:4000/backup
     ports:
       - '8080:8080'
     depends_on:
@@ -41,6 +62,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mock-provider:
+        condition: service_started
 
 volumes:
   pgdata:
+  ollama:

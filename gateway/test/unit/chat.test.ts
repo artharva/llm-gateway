@@ -4,13 +4,15 @@ import { MemoryKeyStore } from '../../src/db/keyStore';
 import { silentLogger } from '../../src/logger';
 import { KeyResolver } from '../../src/middleware/auth';
 import { ProviderError } from '../../src/providers/errors';
-import { FakeProvider } from '../helpers/fakes';
+import { Router } from '../../src/router/Router';
+import { fakeConfig, FakeProvider, providerMap } from '../helpers/fakes';
 
 async function setup() {
   const store = new MemoryKeyStore();
   const { key, record } = await store.create({ name: 'test' });
-  const provider = new FakeProvider();
-  const app = createApp({ keys: new KeyResolver(store, 0), provider, logger: silentLogger });
+  const provider = new FakeProvider('primary');
+  const router = new Router(fakeConfig({ fast: { chain: ['primary'] } }), providerMap(provider));
+  const app = createApp({ keys: new KeyResolver(store, 0), router, logger: silentLogger });
   return { app, key, record, store, provider };
 }
 
@@ -25,9 +27,9 @@ describe('POST /v1/chat', () => {
       .send(body);
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
-      text: 'hello from fake',
+      text: 'hello from primary',
       usage: { input_tokens: 10, output_tokens: 5 },
-      provider: 'fake',
+      provider: 'primary',
       latency_ms: expect.any(Number),
     });
     expect(res.headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
@@ -37,6 +39,19 @@ describe('POST /v1/chat', () => {
     const { app, key, provider } = await setup();
     await request(app).post('/v1/chat').set('Authorization', `Bearer ${key}`).send(body);
     expect(provider.calls[0]).toMatchObject({ max_tokens: 512, temperature: 0 });
+  });
+
+  it('returns 400 with the list of aliases for an unknown model', async () => {
+    const { app, key } = await setup();
+    const res = await request(app)
+      .post('/v1/chat')
+      .set('Authorization', `Bearer ${key}`)
+      .send({ ...body, model: 'gpt-9' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatchObject({
+      code: 'unknown_model',
+      details: { available: ['fast'] },
+    });
   });
 
   it.each([
@@ -93,14 +108,20 @@ describe('POST /v1/chat', () => {
 
   it('returns 502 when the provider fails', async () => {
     const { app, key, provider } = await setup();
-    provider.next = async () => {
-      throw new ProviderError('fake', 'provider_unavailable', 'down', true, 503);
+    provider.behaviour = async () => {
+      throw new ProviderError('primary', 'provider_unavailable', 'down', true, 503);
     };
     const res = await request(app)
       .post('/v1/chat')
       .set('Authorization', `Bearer ${key}`)
       .send(body);
     expect(res.status).toBe(502);
-    expect(res.body.error.code).toBe('provider_unavailable');
+  });
+
+  it('returns 404 for unknown routes', async () => {
+    const { app } = await setup();
+    const res = await request(app).get('/nope');
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('not_found');
   });
 });

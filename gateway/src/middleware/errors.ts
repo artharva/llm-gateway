@@ -37,12 +37,10 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
     }
     logger.error({ err, requestId: c.requestId }, 'unhandled error');
     c.errorCode = 'internal_error';
-    res
-      .status(500)
-      .json(
-        errorBody('internal_error', 'Unexpected error; see gateway logs', {
-          request_id: c.requestId,
-        }),
-      );
+    res.status(500).json(
+      errorBody('internal_error', 'Unexpected error; see gateway logs', {
+        request_id: c.requestId,
+      }),
+    );
   };
 }

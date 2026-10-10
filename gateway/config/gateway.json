@@ -1,0 +1,41 @@
+{
+  "providers": {
+    "groq": {
+      "type": "groq",
+      "model": "llama-3.1-8b-instant",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "apiKeyEnv": "GROQ_API_KEY"
+    },
+    "gemini": {
+      "type": "gemini",
+      "model": "gemini-flash-lite-latest",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "apiKeyEnv": "GEMINI_API_KEY"
+    },
+    "ollama": {
+      "type": "ollama",
+      "model": "llama3.2:1b",
+      "baseUrl": "http://localhost:11434",
+      "baseUrlEnv": "OLLAMA_URL"
+    },
+    "mock-primary": {
+      "type": "mock",
+      "model": "mock-1",
+      "baseUrl": "http://localhost:4000/primary",
+      "baseUrlEnv": "MOCK_PRIMARY_URL"
+    },
+    "mock-backup": {
+      "type": "mock",
+      "model": "mock-1",
+      "baseUrl": "http://localhost:4000/backup",
+      "baseUrlEnv": "MOCK_BACKUP_URL"
+    }
+  },
+  "aliases": {
+    "fast": { "chain": ["groq", "gemini", "ollama"], "timeoutMs": 5000 },
+    "smart": { "chain": ["gemini", "groq", "ollama"], "timeoutMs": 15000 },
+    "balanced": { "chain": ["groq", "gemini"], "strategy": "round-robin", "timeoutMs": 10000 },
+    "local": { "chain": ["ollama"], "timeoutMs": 30000 },
+    "mock": { "chain": ["mock-primary", "mock-backup"], "timeoutMs": 2000 }
+  }
+}

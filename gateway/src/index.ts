@@ -5,7 +5,9 @@ import { migrate } from './db/migrate';
 import { createPool } from './db/pool';
 import { createLogger } from './logger';
 import { KeyResolver } from './middleware/auth';
-import { GroqProvider } from './providers/groq';
+import { loadGatewayConfig } from './config/gatewayConfig';
+import { createProviders } from './providers/registry';
+import { Router } from './router/Router';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -14,9 +16,13 @@ async function main(): Promise<void> {
   const applied = await migrate(pool);
   if (applied.length) logger.info({ applied }, 'migrations applied');
 
+  const config = loadGatewayConfig(env.GATEWAY_CONFIG);
+  const providers = createProviders(config, process.env, logger);
+  logger.info({ providers: [...providers.keys()] }, 'providers ready');
+
   const app = createApp({
     keys: new KeyResolver(new PgKeyStore(pool)),
-    provider: new GroqProvider(process.env.GROQ_API_KEY ?? ''),
+    router: new Router(config, providers),
     logger,
   });
   const server = app.listen(env.PORT, () => logger.info({ port: env.PORT }, 'gateway listening'));

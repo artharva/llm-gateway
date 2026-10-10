@@ -2,13 +2,13 @@ import express from 'express';
 import type { KeyResolver } from './middleware/auth';
 import { errorHandler, notFound, requestId } from './middleware/errors';
 import type { Logger } from './logger';
-import type { ChatProvider } from './providers/groq';
+import type { Router } from './router/Router';
 import { chatRoutes } from './routes/chat';
 import { healthRoutes } from './routes/health';
 
 export interface AppDeps {
   keys: KeyResolver;
-  provider: ChatProvider;
+  router: Router;
   logger: Logger;
 }
 
