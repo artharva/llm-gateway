@@ -19,6 +19,7 @@ COPY dashboard/package.json dashboard/
 RUN npm ci --workspace gateway --omit=dev && npm cache clean --force
 COPY --from=build /app/gateway/dist gateway/dist
 COPY gateway/migrations gateway/migrations
+COPY gateway/config gateway/config
 WORKDIR /app/gateway
 USER node
 EXPOSE 8080

@@ -63,7 +63,7 @@ export function KeysAdmin({ api, palette }: { api: Api; palette: Palette }) {
       <Card
         className="span-12"
         title="Keys"
-        subtitle="Edit limits inline. Changes apply within a few seconds."
+        subtitle="Edit limits inline. Changes take effect on the next request."
       >
         {!keys.data ? (
           <Empty>{keys.loading ? 'Loading…' : 'Could not load keys.'}</Empty>
