@@ -1,4 +1,6 @@
 import express from 'express';
+import type { BudgetTracker } from './limits/BudgetTracker';
+import type { RateLimiter } from './limits/RateLimiter';
 import type { KeyResolver } from './middleware/auth';
 import { errorHandler, notFound, requestId } from './middleware/errors';
 import type { Logger } from './logger';
@@ -9,6 +11,8 @@ import { healthRoutes } from './routes/health';
 export interface AppDeps {
   keys: KeyResolver;
   router: Router;
+  limiter: RateLimiter;
+  budget: BudgetTracker;
   logger: Logger;
 }
 

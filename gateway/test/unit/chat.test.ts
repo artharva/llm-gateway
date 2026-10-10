@@ -1,30 +1,10 @@
 import request from 'supertest';
-import { createApp } from '../../src/app';
-import { MemoryKeyStore } from '../../src/db/keyStore';
-import { silentLogger } from '../../src/logger';
-import { KeyResolver } from '../../src/middleware/auth';
 import { ProviderError } from '../../src/providers/errors';
-import { Router } from '../../src/router/Router';
-import {
-  fakeConfig,
-  FakeProvider,
-  instantRetries,
-  memoryBreakers,
-  providerMap,
-} from '../helpers/fakes';
+import { testApp } from '../helpers/app';
+import { fakeConfig } from '../helpers/fakes';
 
 async function setup() {
-  const store = new MemoryKeyStore();
-  const { key, record } = await store.create({ name: 'test' });
-  const provider = new FakeProvider('primary');
-  const router = new Router(
-    fakeConfig({ fast: { chain: ['primary'] } }),
-    providerMap(provider),
-    memoryBreakers(),
-    instantRetries,
-  );
-  const app = createApp({ keys: new KeyResolver(store, 0), router, logger: silentLogger });
-  return { app, key, record, store, provider };
+  return testApp({ config: fakeConfig({ fast: { chain: ['primary'] } }) });
 }
 
 const body = { model: 'fast', messages: [{ role: 'user', content: 'hi' }] };
@@ -47,7 +27,7 @@ describe('POST /v1/chat', () => {
   });
 
   it('fills in defaults for max_tokens and temperature', async () => {
-    const { app, key, provider } = await setup();
+    const { app, key, primary: provider } = await setup();
     await request(app).post('/v1/chat').set('Authorization', `Bearer ${key}`).send(body);
     expect(provider.calls[0]).toMatchObject({ max_tokens: 512, temperature: 0 });
   });
@@ -118,7 +98,7 @@ describe('POST /v1/chat', () => {
   });
 
   it('returns 502 with each failure when every provider fails', async () => {
-    const { app, key, provider } = await setup();
+    const { app, key, primary: provider } = await setup();
     provider.behaviour = async () => {
       throw new ProviderError('primary', 'provider_unavailable', 'down', true, 503);
     };

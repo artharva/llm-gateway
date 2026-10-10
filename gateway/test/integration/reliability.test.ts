@@ -3,6 +3,8 @@ import request from 'supertest';
 import { createApp } from '../../src/app';
 import { parseGatewayConfig } from '../../src/config/gatewayConfig';
 import { MemoryKeyStore } from '../../src/db/keyStore';
+import { BudgetTracker } from '../../src/limits/BudgetTracker';
+import { RateLimiter } from '../../src/limits/RateLimiter';
 import { silentLogger } from '../../src/logger';
 import { KeyResolver } from '../../src/middleware/auth';
 import { createProviders } from '../../src/providers/registry';
@@ -51,6 +53,8 @@ describeIntegration('fallback through the full app with a failing mock provider'
     app = createApp({
       keys: new KeyResolver(store),
       router: new Router(config, createProviders(config, {}), breakers),
+      limiter: new RateLimiter(redis),
+      budget: new BudgetTracker(redis),
       logger: silentLogger,
     });
   });
