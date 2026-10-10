@@ -22,10 +22,12 @@ describe('admin API', () => {
 
   it('creates a key, shows the plaintext once, and the key works straight away', async () => {
     const { app } = await testApp();
-    const created = await request(app)
-      .post('/admin/keys')
-      .set(admin)
-      .send({ name: 'agentloop', owner: 'atharva', rate_per_min: 30, monthly_token_budget: 50_000 });
+    const created = await request(app).post('/admin/keys').set(admin).send({
+      name: 'agentloop',
+      owner: 'atharva',
+      rate_per_min: 30,
+      monthly_token_budget: 50_000,
+    });
     expect(created.status).toBe(201);
     expect(created.body).toMatchObject({
       name: 'agentloop',
