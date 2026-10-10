@@ -1,0 +1,2 @@
+# Raw k6 output is large; summary.md and the per-scenario JSON are kept.
+*.ndjson

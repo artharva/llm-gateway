@@ -1,0 +1,8 @@
+{
+  "cpus": 2,
+  "memory_mb": 3915,
+  "os": "Ubuntu 22.04.5 LTS VM (6.8.0-138-generic) on a Windows laptop",
+  "k6": "v1.8.1",
+  "recorded_at": "2026-10-10T11:13:02Z",
+  "cpu": "Intel Core i7-12700H (2 vCPUs given to the VM)"
+}
